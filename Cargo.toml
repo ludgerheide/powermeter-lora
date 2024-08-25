@@ -21,6 +21,10 @@ cyw43-pio = { version = "0.2", features = ["defmt", "overclock"], optional = tru
 static_cell = { version = "2.1", optional = true }
 portable-atomic = { version = "1.7", features = ["critical-section"], optional = true } # needed for static_cell on thumbv6
 
+lora-phy = { version = "3.0", features= ["lorawan-radio"]}
+lorawan = { version = "0.9", default-features = false, features = ["default-crypto"]}
+lorawan-device = { version = "0.12", default-features = false, features= ["region-eu868", "defmt", "default-crypto", "embassy-time"]}
+embedded-hal-bus = { version = "0.1", features = ["async"]}
 
 
 [features]
