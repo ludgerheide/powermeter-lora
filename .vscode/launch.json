@@ -13,7 +13,7 @@
             "servertype": "openocd",
             "configFiles": [
                 "/interface/cmsis-dap.cfg",
-                "/target/rp2040.cfg"
+                "${workspaceFolder}/rp2040.cfg"
             ],
             "searchDir": [
                 "${workspaceRoot}",
@@ -22,7 +22,7 @@
             "openOCDPreConfigLaunchCommands": [
                 "adapter speed 5000"
             ],
-            "svdPath": "${workspaceFolder}/target/rp2040.svd",
+            "svdPath": "${workspaceFolder}/rp2040.svd",
             "runToEntryPoint": "main",
             "postRestartCommands": [
                 "break main",

@@ -11,9 +11,22 @@ defmt = "0.3"
 defmt-rtt = "0.4"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
 
-embassy-executor = { version = "0.6", features = ["arch-cortex-m", "executor-thread", "defmt", "integrated-timers"] }
+embassy-executor = { version = "0.6", features = ["arch-cortex-m", "executor-thread", "defmt", "integrated-timers", "task-arena-size-65536"] }
 embassy-time = { version = "0.3", features = ["defmt", "defmt-timestamp-uptime"] }
 embassy-rp = { version = "0.2", features = ["defmt", "time-driver"] }
+embassy-sync = {version = "0.6", features = ["defmt"] }
+
+cyw43 = { version = "0.2", features = ["defmt", "firmware-logs"], optional = true }
+cyw43-pio = { version = "0.2", features = ["defmt", "overclock"], optional = true }
+static_cell = { version = "2.1", optional = true }
+portable-atomic = { version = "1.7", features = ["critical-section"], optional = true } # needed for static_cell on thumbv6
+
+
+
+[features]
+default = ["pico_w"]
+pico_non_w = []
+pico_w = ["dep:cyw43", "dep:cyw43-pio", "dep:static_cell", "dep:portable-atomic"]
 
 
 [profile.release]
