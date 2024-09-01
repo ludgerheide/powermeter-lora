@@ -2,22 +2,25 @@
 #![no_main]
 
 mod blinky;
+use core::sync::atomic::Ordering;
+
+use portable_atomic::AtomicU64;
+
 use blinky::BlinkPeripherals;
 use defmt::*;
 use embassy_executor::Spawner;
 use embassy_rp::dma::Channel;
 use embassy_rp::gpio::{Input, Level, Output, Pin, Pull};
 use embassy_rp::spi::{Config, Spi};
-use embassy_time::Delay;
-use embassy_time::{Duration, Timer};
+use embassy_time::Duration;
+use embassy_time::{Delay, Timer};
 use embedded_hal_bus::spi::ExclusiveDevice;
 use lora_phy::iv::GenericSx126xInterfaceVariant;
 use lora_phy::lorawan_radio::LorawanRadio;
 use lora_phy::sx126x::{self, Sx1262, Sx126x, TcxoCtrlVoltage};
 use lora_phy::LoRa;
-use lorawan_device::async_device::{region, Device, EmbassyTimer, JoinMode};
+use lorawan_device::async_device::{region, Device, EmbassyTimer};
 use lorawan_device::default_crypto::DefaultFactory as Crypto;
-use lorawan_device::{AppEui, AppKey, DevEui};
 use {defmt_rtt as _, panic_probe as _};
 use {defmt_rtt as _, panic_probe as _};
 
@@ -25,10 +28,36 @@ use {defmt_rtt as _, panic_probe as _};
 const LORAWAN_REGION: region::Region = region::Region::EU868;
 const MAX_TX_POWER: u8 = 14;
 
+const S0_CHANNEL_COUNT: usize = 6;
+static S0_COUNTERS: [AtomicU64; S0_CHANNEL_COUNT] = [const { AtomicU64::new(0) }; S0_CHANNEL_COUNT];
+
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     // Initialise Peripherals
     let p = embassy_rp::init(Default::default());
+
+    // Start the tasks that update the values for the counters whenever they are updated
+    {
+        //spawner.spawn(blink_task(control, initial_period)).unwrap();
+        spawner
+            .spawn(counter_task(Input::new(p.PIN_16, Pull::Down), 0))
+            .unwrap();
+        spawner
+            .spawn(counter_task(Input::new(p.PIN_17, Pull::Down), 1))
+            .unwrap();
+        spawner
+            .spawn(counter_task(Input::new(p.PIN_18, Pull::Down), 2))
+            .unwrap();
+        spawner
+            .spawn(counter_task(Input::new(p.PIN_19, Pull::Down), 3))
+            .unwrap();
+        spawner
+            .spawn(counter_task(Input::new(p.PIN_21, Pull::Down), 4))
+            .unwrap();
+        spawner
+            .spawn(counter_task(Input::new(p.PIN_22, Pull::Down), 5))
+            .unwrap();
+    }
 
     // Initialize the peripherals for the status blinky
     {
@@ -91,18 +120,31 @@ async fn main(spawner: Spawner) {
             device
         };
 
-        //TODO: ACtually join
+        {
+            // Join the LoRa network
+            // For now, we will be trying to get OTAA to work. Since it is the more stable solution in the long run.
+        }
     }
 
     // Loop
     loop {
-        blinky::PERIOD.signal(Duration::from_millis(100));
-        Timer::after(Duration::from_millis(1000)).await;
-
-        blinky::PERIOD.signal(Duration::from_millis(20));
-        Timer::after(Duration::from_millis(1000)).await;
-
         blinky::PERIOD.signal(Duration::from_millis(1000));
-        Timer::after(Duration::from_millis(1500)).await;
+        for (i, counter) in S0_COUNTERS.iter().enumerate().take(S0_CHANNEL_COUNT) {
+            let value = counter.load(Ordering::Relaxed);
+            debug!("Value for counter {:?} is {:?}", i, value);
+        }
+        Timer::after(Duration::from_millis(1000)).await;
+    }
+}
+
+#[embassy_executor::task(pool_size = S0_CHANNEL_COUNT)]
+async fn counter_task(mut input: Input<'static>, counter_index: usize) -> ! {
+    let our_counter = &S0_COUNTERS[counter_index];
+    // Wait a bit for any startup noise to be settled
+    Timer::after(Duration::from_millis(10)).await;
+    loop {
+        input.wait_for_high().await;
+        our_counter.fetch_add(1, Ordering::Relaxed);
+        input.wait_for_low().await;
     }
 }
