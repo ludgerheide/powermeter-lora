@@ -16,16 +16,22 @@ embassy-time = { version = "0.3", features = ["defmt", "defmt-timestamp-uptime"]
 embassy-rp = { version = "0.2", features = ["defmt", "time-driver"] }
 embassy-sync = {version = "0.6", features = ["defmt"] }
 
-cyw43 = { version = "0.2", features = ["defmt", "firmware-logs"], optional = true }
-cyw43-pio = { version = "0.2", features = ["defmt", "overclock"], optional = true }
+cyw43 = { version = "0.2", optional = true }
+cyw43-pio = { version = "0.2", features = ["overclock"], optional = true }
 static_cell = { version = "2.1", optional = true }
 portable-atomic = { version = "1.7", features = ["critical-section"], optional = true } # needed for static_cell on thumbv6
 
 lora-phy = { version = "3.0", features= ["lorawan-radio"]}
 lorawan = { version = "0.9", default-features = false, features = ["default-crypto"]}
 lorawan-device = { version = "0.12", default-features = false, features= ["region-eu868", "defmt", "default-crypto", "embassy-time"]}
-embedded-hal-bus = { version = "0.1", features = ["async"]}
 
+embedded-hal-bus = { version = "0.1", features = ["async"]}
+const-hex = {version = "1.12", default-features = false}
+
+embassy-rp-flash-struct = {version = "1.0", git= "https://github.com/ludgerheide/embassy-rp-flash-struct.git"}
+bincode = { version = ">=2.0.0-rc.3, <2.1", default-features = false, features=["derive"]}
+embedded-io-async = "0.6"
+micromath = { version = "2.1", features=["num-traits"] }
 
 [features]
 default = ["pico_w"]
